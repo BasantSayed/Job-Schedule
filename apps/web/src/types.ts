@@ -34,3 +34,18 @@ export type Worker = {
   concurrency: number;
   version: string;
 };
+
+export type TaskStatus = "TODO" | "IN_PROGRESS" | "IN_REVIEW" | "DONE";
+
+export type TaskRecord = {
+  id: string;
+  title: string;
+  description: string;
+  status: TaskStatus;
+  assignedWorkerId: string | null;
+  assignedWorkerEmail: string | null;
+  dueAt: number;
+  createdBy: string;
+  createdAt: number;
+  updatedAt: number;
+};

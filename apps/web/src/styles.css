@@ -1,61 +1,47 @@
-body {
-  font-family: Arial, sans-serif;
-  margin: 0;
-  background: #f5f7fb;
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body { @apply bg-gray-950 text-gray-100 font-sans antialiased; }
+  ::-webkit-scrollbar { @apply w-1.5; }
+  ::-webkit-scrollbar-track { @apply bg-gray-900; }
+  ::-webkit-scrollbar-thumb { @apply bg-gray-700 rounded-full; }
 }
 
-.container {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 24px;
-}
-
-.panel {
-  background: #fff;
-  border: 1px solid #dbe0ea;
-  border-radius: 8px;
-  padding: 16px;
-  margin-bottom: 16px;
-}
-
-.grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-}
-
-.form,
-.row {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-
-.form {
-  flex-direction: column;
-  align-items: stretch;
-}
-
-input,
-textarea,
-select,
-button {
-  padding: 8px;
-}
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 8px;
-}
-
-th,
-td {
-  border-bottom: 1px solid #eef1f6;
-  padding: 8px;
-  text-align: left;
-}
-
-.error {
-  color: #c62828;
+@layer components {
+  .btn-primary {
+    @apply inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-brand-600 text-white text-sm font-medium
+           hover:bg-brand-700 active:scale-95 transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .btn-secondary {
+    @apply inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-800 text-gray-200 text-sm font-medium
+           border border-gray-700 hover:bg-gray-700 active:scale-95 transition-all duration-150;
+  }
+  .btn-danger {
+    @apply inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-medium
+           hover:bg-red-700 active:scale-95 transition-all duration-150;
+  }
+  .card {
+    @apply bg-gray-900 border border-gray-800 rounded-xl p-5 shadow-sm;
+  }
+  .input {
+    @apply w-full px-3 py-2 rounded-lg bg-gray-800 border border-gray-700 text-gray-100 text-sm
+           placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent
+           transition-all duration-150;
+  }
+  .label {
+    @apply block text-sm font-medium text-gray-300 mb-1.5;
+  }
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+  .modal-overlay {
+    @apply fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4;
+  }
+  .modal {
+    @apply bg-gray-900 border border-gray-800 rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto;
+  }
 }

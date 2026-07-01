@@ -7,9 +7,11 @@ import { errorHandler } from "./http/error.js";
 import { EventRepository } from "./repositories/eventRepository.js";
 import { JobRepository } from "./repositories/jobRepository.js";
 import { WorkerRepository } from "./repositories/workerRepository.js";
+import { TaskRepository } from "./repositories/taskRepository.js";
 import { healthRoutes } from "./routes/health.js";
 import { jobRoutes } from "./routes/jobs.js";
 import { workerRoutes } from "./routes/workers.js";
+import { taskRoutes } from "./routes/tasks.js";
 import { SchedulerService } from "./services/schedulerService.js";
 
 async function main(): Promise<void> {
@@ -19,6 +21,7 @@ async function main(): Promise<void> {
   const jobs = new JobRepository(db);
   const workers = new WorkerRepository(db);
   const events = new EventRepository(db);
+  const tasks = new TaskRepository(db);
   const scheduler = new SchedulerService(jobs, events, config.leaseMs);
 
   const app = Fastify({ logger: true });
@@ -37,6 +40,7 @@ async function main(): Promise<void> {
   await healthRoutes(app);
   await jobRoutes(app, { jobs, events, scheduler });
   await workerRoutes(app, { workers, jobs, scheduler });
+  await taskRoutes(app, { tasks });
 
   const recoveryTimer = setInterval(async () => {
     try {
