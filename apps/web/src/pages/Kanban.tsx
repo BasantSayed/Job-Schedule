@@ -9,7 +9,7 @@ import {
 } from "@dnd-kit/core";
 import { SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { format } from "date-fns";
+import { format, isSameDay } from "date-fns";
 import { CalendarDays, Clock, Loader2, Plus, User } from "lucide-react";
 import { useEffect, useState } from "react";
 import { createTask, deleteTask, listTasks, updateTask } from "../api";
@@ -43,7 +43,8 @@ function TaskCard({
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: task.id });
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0 : 1 };
 
-  const isOverdue = task.dueAt < Date.now() && task.status !== "DONE";
+  const isOverdue = !!task.dueAt && task.dueAt < Date.now() && task.status !== "DONE";
+  const displayDate = task.dueAt ?? task.startAt;
 
   return (
     <div
@@ -62,10 +63,14 @@ function TaskCard({
         <p className="text-xs text-gray-500 mb-2.5 line-clamp-2">{task.description}</p>
       )}
       <div className="flex items-center gap-3 text-xs text-gray-500">
-        <span className={`flex items-center gap-1 ${isOverdue ? "text-red-400" : ""}`}>
-          <Clock size={11} />
-          {format(task.dueAt, "MMM d, HH:mm")}
-        </span>
+        {displayDate && (
+          <span className={`flex items-center gap-1 ${isOverdue ? "text-red-400" : ""}`}>
+            <Clock size={11} />
+            {task.startAt && task.dueAt && !isSameDay(task.startAt, task.dueAt)
+              ? `${format(task.startAt, "MMM d")} → ${format(task.dueAt, "MMM d")}`
+              : format(displayDate, "MMM d, HH:mm")}
+          </span>
+        )}
         {task.assignedWorkerEmail && (
           <span className="flex items-center gap-1 truncate">
             <User size={11} />

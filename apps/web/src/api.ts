@@ -89,7 +89,7 @@ export async function createTask(
 
 export async function updateTask(
   id: string,
-  patch: Partial<Pick<TaskRecord, "title" | "description" | "status" | "assignedWorkerId" | "assignedWorkerEmail" | "dueAt">>
+  patch: Partial<Pick<TaskRecord, "title" | "description" | "status" | "assignedWorkerId" | "assignedWorkerEmail" | "startAt" | "dueAt">>
 ): Promise<void> {
   await apiRequest(`/tasks/${id}`, { method: "PATCH", body: JSON.stringify(patch) });
 }

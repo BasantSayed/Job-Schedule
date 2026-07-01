@@ -44,7 +44,8 @@ export type TaskRecord = {
   status: TaskStatus;
   assignedWorkerId: string | null;
   assignedWorkerEmail: string | null;
-  dueAt: number;
+  startAt: number | null;
+  dueAt: number | null;
   createdBy: string;
   createdAt: number;
   updatedAt: number;

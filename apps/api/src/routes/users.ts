@@ -1,3 +1,4 @@
+import { getAuth } from "firebase-admin/auth";
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import type { UserRepository } from "../repositories/userRepository.js";
@@ -6,9 +7,18 @@ export async function userRoutes(
   app: FastifyInstance,
   deps: { users: UserRepository }
 ): Promise<void> {
+  // List ALL users from Firebase Auth (not just Firestore-synced ones)
   app.get("/users", async () => {
-    const list = await deps.users.list();
-    return { items: list };
+    const result = await getAuth().listUsers(1000);
+    const items = result.users
+      .filter((u) => u.email)
+      .map((u) => ({
+        uid: u.uid,
+        email: u.email ?? "",
+        displayName: u.displayName || u.email?.split("@")[0] || u.uid,
+        createdAt: new Date(u.metadata.creationTime).getTime()
+      }));
+    return { items };
   });
 
   app.post("/users/sync", async (request, reply) => {

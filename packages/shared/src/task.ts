@@ -10,7 +10,8 @@ export type TaskRecord = {
   status: TaskStatus;
   assignedWorkerId: string | null;
   assignedWorkerEmail: string | null;
-  dueAt: number;
+  startAt: number | null;
+  dueAt: number | null;
   createdBy: string;
   createdAt: number;
   updatedAt: number;
@@ -21,7 +22,8 @@ export const createTaskSchema = z.object({
   description: z.string().max(2000).default(""),
   assignedWorkerId: z.string().nullable().default(null),
   assignedWorkerEmail: z.string().nullable().default(null),
-  dueAt: z.number().int().positive(),
+  startAt: z.number().int().positive().nullable().default(null),
+  dueAt: z.number().int().positive().nullable().default(null),
   status: z.enum(taskStatuses).default("TODO")
 });
 
@@ -30,6 +32,7 @@ export const updateTaskSchema = z.object({
   description: z.string().max(2000).optional(),
   assignedWorkerId: z.string().nullable().optional(),
   assignedWorkerEmail: z.string().nullable().optional(),
-  dueAt: z.number().int().positive().optional(),
+  startAt: z.number().int().positive().nullable().optional(),
+  dueAt: z.number().int().positive().nullable().optional(),
   status: z.enum(taskStatuses).optional()
 });

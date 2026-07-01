@@ -7,6 +7,7 @@ import type { TaskRecord, TaskStatus } from "../types";
 
 type Props = {
   initial?: TaskRecord | null;
+  defaultStartAt?: number;
   defaultDueAt?: number;
   onSave: (data: Omit<TaskRecord, "id" | "createdAt" | "updatedAt" | "createdBy">) => Promise<void>;
   onDelete?: () => Promise<void>;
@@ -14,6 +15,10 @@ type Props = {
 };
 
 const STATUS_OPTIONS: TaskStatus[] = ["TODO", "IN_PROGRESS", "IN_REVIEW", "DONE"];
+
+function fmtDatetime(ts: number | null | undefined, fallback: number) {
+  return format(ts ?? fallback, "yyyy-MM-dd'T'HH:mm");
+}
 
 function WorkerAutocomplete({
   value,
@@ -38,7 +43,15 @@ function WorkerAutocomplete({
     onChange(v);
     if (v.length >= 1) {
       const q = v.toLowerCase().replace(/^@/, "");
-      setSuggestions(users.filter((u) => u.email.toLowerCase().includes(q) || u.displayName.toLowerCase().includes(q)).slice(0, 6));
+      setSuggestions(
+        users
+          .filter(
+            (u) =>
+              u.email.toLowerCase().includes(q) ||
+              u.displayName.toLowerCase().includes(q)
+          )
+          .slice(0, 6)
+      );
     } else {
       setSuggestions([]);
     }
@@ -73,10 +86,15 @@ function WorkerAutocomplete({
             <li
               key={u.uid}
               onMouseDown={() => pick(u)}
-              className="px-3 py-2 hover:bg-gray-800 cursor-pointer flex flex-col"
+              className="px-3 py-2 hover:bg-gray-800 cursor-pointer flex items-center gap-3"
             >
-              <span className="text-sm text-gray-100 font-medium">{u.displayName}</span>
-              <span className="text-xs text-gray-400">{u.email}</span>
+              <div className="w-7 h-7 rounded-full bg-brand-700 flex items-center justify-center text-[11px] font-bold text-white shrink-0">
+                {u.displayName.charAt(0).toUpperCase()}
+              </div>
+              <div>
+                <span className="text-sm text-gray-100 font-medium">{u.displayName}</span>
+                <span className="text-xs text-gray-400 ml-2">{u.email}</span>
+              </div>
             </li>
           ))}
         </ul>
@@ -85,19 +103,22 @@ function WorkerAutocomplete({
   );
 }
 
-export function TaskModal({ initial, defaultDueAt, onSave, onDelete, onClose }: Props) {
+export function TaskModal({ initial, defaultStartAt, defaultDueAt, onSave, onDelete, onClose }: Props) {
   const { user } = useAuth();
+  const now = Date.now();
   const [title, setTitle] = useState(initial?.title ?? "");
   const [description, setDescription] = useState(initial?.description ?? "");
   const [status, setStatus] = useState<TaskStatus>(initial?.status ?? "TODO");
   const [assignedWorkerEmail, setAssignedWorkerEmail] = useState(initial?.assignedWorkerEmail ?? "");
-  const [assignedWorkerId, setAssignedWorkerId] = useState(initial?.assignedWorkerId ?? null);
+  const [assignedWorkerId, setAssignedWorkerId] = useState<string | null>(initial?.assignedWorkerId ?? null);
+  const [startAt, setStartAt] = useState(fmtDatetime(initial?.startAt, defaultStartAt ?? now));
   const [dueAt, setDueAt] = useState(
-    format(initial?.dueAt ?? defaultDueAt ?? Date.now(), "yyyy-MM-dd'T'HH:mm")
+    fmtDatetime(initial?.dueAt, defaultDueAt ?? now + 24 * 60 * 60 * 1000)
   );
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [matchedUser, setMatchedUser] = useState<AppUser | null>(null);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
@@ -107,6 +128,12 @@ export function TaskModal({ initial, defaultDueAt, onSave, onDelete, onClose }: 
 
   const handleSave = async () => {
     if (!title.trim()) { setError("Title is required"); return; }
+    const startTs = startAt ? new Date(startAt).getTime() : null;
+    const dueTs = dueAt ? new Date(dueAt).getTime() : null;
+    if (startTs && dueTs && startTs > dueTs) {
+      setError("Start date cannot be after end date");
+      return;
+    }
     setSaving(true);
     setError(null);
     try {
@@ -116,7 +143,8 @@ export function TaskModal({ initial, defaultDueAt, onSave, onDelete, onClose }: 
         status,
         assignedWorkerId: (assignedWorkerId ?? assignedWorkerEmail.trim()) || null,
         assignedWorkerEmail: assignedWorkerEmail.trim() || null,
-        dueAt: new Date(dueAt).getTime()
+        startAt: startTs,
+        dueAt: dueTs
       });
       onClose();
     } catch (err) {
@@ -169,28 +197,38 @@ export function TaskModal({ initial, defaultDueAt, onSave, onDelete, onClose }: 
           <div>
             <label className="label">Description</label>
             <textarea
-              className="input resize-none h-24"
+              className="input resize-none h-20"
               placeholder="Add details..."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
             />
           </div>
 
+          <div>
+            <label className="label">Status</label>
+            <select
+              className="input"
+              value={status}
+              onChange={(e) => setStatus(e.target.value as TaskStatus)}
+            >
+              {STATUS_OPTIONS.map((s) => (
+                <option key={s} value={s}>{s.replace(/_/g, " ")}</option>
+              ))}
+            </select>
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="label">Status</label>
-              <select
+              <label className="label">Start date &amp; time</label>
+              <input
+                type="datetime-local"
                 className="input"
-                value={status}
-                onChange={(e) => setStatus(e.target.value as TaskStatus)}
-              >
-                {STATUS_OPTIONS.map((s) => (
-                  <option key={s} value={s}>{s.replace("_", " ")}</option>
-                ))}
-              </select>
+                value={startAt}
+                onChange={(e) => setStartAt(e.target.value)}
+              />
             </div>
             <div>
-              <label className="label">Due date &amp; time</label>
+              <label className="label">End date &amp; time</label>
               <input
                 type="datetime-local"
                 className="input"
@@ -206,16 +244,22 @@ export function TaskModal({ initial, defaultDueAt, onSave, onDelete, onClose }: 
               value={assignedWorkerEmail}
               onChange={(v) => {
                 setAssignedWorkerEmail(v);
-                setAssignedWorkerId(null);
+                if (!matchedUser || v !== matchedUser.email) {
+                  setAssignedWorkerId(null);
+                  setMatchedUser(null);
+                }
               }}
               onSelectUser={(u) => {
                 setAssignedWorkerId(u.uid);
                 setAssignedWorkerEmail(u.email);
+                setMatchedUser(u);
               }}
             />
             {assignedWorkerEmail && (
-              <p className="text-xs text-gray-500 mt-1">
-                {assignedWorkerId ? "✓ Matched to a registered user — they'll get a notification" : "No matching user found yet"}
+              <p className={`text-xs mt-1 ${matchedUser ? "text-emerald-400" : "text-gray-500"}`}>
+                {matchedUser
+                  ? `✓ ${matchedUser.displayName} — will receive a notification`
+                  : "No matching user found yet"}
               </p>
             )}
           </div>

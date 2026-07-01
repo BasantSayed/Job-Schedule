@@ -20,6 +20,7 @@ export async function taskRoutes(
       status: body.status,
       assignedWorkerId: body.assignedWorkerId,
       assignedWorkerEmail: body.assignedWorkerEmail,
+      startAt: body.startAt,
       dueAt: body.dueAt,
       createdBy,
       createdAt: now,
