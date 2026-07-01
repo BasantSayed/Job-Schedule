@@ -46,7 +46,7 @@ async function main(): Promise<void> {
   await healthRoutes(app);
   await jobRoutes(app, { jobs, events, scheduler });
   await workerRoutes(app, { workers, jobs, scheduler });
-  await taskRoutes(app, { tasks, notifications });
+  await taskRoutes(app, { tasks, notifications, users });
   await userRoutes(app, { users });
   await notificationRoutes(app, { notifications });
 

@@ -147,7 +147,8 @@ export function TaskModal({ initial, defaultStartAt, defaultDueAt, onSave, onDel
         title: title.trim(),
         description: description.trim(),
         status,
-        assignedWorkerId: (assignedWorkerId ?? assignedWorkerEmail.trim()) || null,
+        // Only store a real UID — never store email in the UID field
+        assignedWorkerId: assignedWorkerId || null,
         assignedWorkerEmail: assignedWorkerEmail.trim() || null,
         startAt: startTs,
         dueAt: dueTs

@@ -125,8 +125,12 @@ export function Dashboard() {
       inReview: tasks.filter((t) => t.status === "IN_REVIEW").length,
       done: tasks.filter((t) => t.status === "DONE").length,
       overdue: tasks.filter((t) => t.dueAt && isPast(t.dueAt) && t.status !== "DONE").length,
-      mine: tasks.filter((t) => t.assignedWorkerId === user?.uid || t.createdBy === user?.uid)
-        .length
+      mine: tasks.filter(
+        (t) =>
+          t.assignedWorkerId === user?.uid ||
+          t.createdBy === user?.uid ||
+          (user?.email && t.assignedWorkerEmail === user.email)
+      ).length
     }),
     [tasks, user]
   );

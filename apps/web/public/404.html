@@ -3,10 +3,11 @@
   <head>
     <meta charset="utf-8" />
     <script>
-      // GitHub Pages SPA redirect: encode the path and redirect to index.html
-      const repo = location.pathname.split('/')[1];
-      const path = location.pathname.slice(1 + repo.length) + location.search + location.hash;
-      sessionStorage.setItem('spa_redirect', path || '/');
+      // GitHub Pages SPA redirect: store the FULL path and redirect to index.html
+      var fullPath = location.pathname + location.search + location.hash;
+      sessionStorage.setItem('spa_redirect', fullPath);
+      // Redirect to the repo root (first path segment)
+      var repo = location.pathname.split('/')[1];
       location.replace('/' + repo + '/');
     </script>
   </head>
