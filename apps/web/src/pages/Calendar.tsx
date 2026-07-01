@@ -220,21 +220,25 @@ export function Calendar() {
                           );
                         }
 
+                        // For range tasks, check if this is the first visible
+                        // day of the week so the title always re-appears.
+                        const colIndex = i % 7;
+                        const showTitle = start || colIndex === 0;
+
                         return (
                           <div
                             key={t.id}
                             className={[
                               "text-[11px] truncate px-1.5 py-0.5 cursor-pointer",
                               STATUS_BAR[t.status],
-                              start && !end ? "rounded-l-full mr-0" : "",
-                              end && !start ? "rounded-r-full ml-0" : "",
-                              single || (start && end) ? "rounded-full" : "",
-                              mid ? "rounded-none mx-0" : ""
+                              start ? "rounded-l-full" : "rounded-l-none",
+                              end ? "rounded-r-full" : "rounded-r-none",
+                              single ? "rounded-full" : ""
                             ]
                               .filter(Boolean)
                               .join(" ")}
                             style={{
-                              marginLeft: start ? "2px" : "0",
+                              marginLeft: start || colIndex === 0 ? "2px" : "0",
                               marginRight: end ? "2px" : "0"
                             }}
                             onClick={(e) => {
@@ -242,7 +246,7 @@ export function Calendar() {
                               setModalTask(t);
                             }}
                           >
-                            {start ? t.title : ""}
+                            {showTitle ? t.title : "\u00a0"}
                           </div>
                         );
                       })}
