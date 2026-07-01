@@ -1,0 +1,5 @@
+{
+  "buildCommand": "npm install && npm run build --workspace @scheduler/web",
+  "outputDirectory": "apps/web/dist",
+  "framework": "vite"
+}

@@ -1,0 +1,22 @@
+{
+  "name": "distributed-job-scheduler",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Distributed job scheduler with React, Node.js, and Firebase Firestore",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspace @scheduler/shared && npm run build --workspace @scheduler/api && npm run build --workspace @scheduler/worker && npm run build --workspace @scheduler/web",
+    "dev": "npm run dev --workspace @scheduler/api",
+    "emulator:start": "firebase emulators:start --only firestore",
+    "emulator:start:ui": "firebase emulators:start --only firestore --import=.firebase-data --export-on-exit",
+    "lint": "npm run lint --workspace @scheduler/shared && npm run lint --workspace @scheduler/api && npm run lint --workspace @scheduler/worker && npm run lint --workspace @scheduler/web",
+    "test": "npm run test --workspace @scheduler/shared && npm run test --workspace @scheduler/api && npm run test --workspace @scheduler/worker && npm run test --workspace @scheduler/web",
+    "typecheck": "npm run typecheck --workspace @scheduler/shared && npm run typecheck --workspace @scheduler/api && npm run typecheck --workspace @scheduler/worker && npm run typecheck --workspace @scheduler/web"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

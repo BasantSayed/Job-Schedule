@@ -1,0 +1,36 @@
+services:
+  - type: web
+    name: scheduler-api
+    runtime: node
+    rootDir: .
+    buildCommand: npm install && npm run build --workspace @scheduler/api
+    startCommand: npm run start --workspace @scheduler/api
+    envVars:
+      - key: NODE_VERSION
+        value: 20
+      - key: SERVICE_TOKEN
+        sync: false
+      - key: FIREBASE_PROJECT_ID
+        sync: false
+      - key: FIREBASE_CLIENT_EMAIL
+        sync: false
+      - key: FIREBASE_PRIVATE_KEY
+        sync: false
+      - key: PORT
+        value: 8080
+
+  - type: worker
+    name: scheduler-worker
+    runtime: node
+    rootDir: .
+    buildCommand: npm install && npm run build --workspace @scheduler/worker
+    startCommand: npm run start --workspace @scheduler/worker
+    envVars:
+      - key: NODE_VERSION
+        value: 20
+      - key: SERVICE_TOKEN
+        sync: false
+      - key: API_BASE_URL
+        sync: false
+      - key: WORKER_CONCURRENCY
+        value: 1

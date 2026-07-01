@@ -1,0 +1,44 @@
+name: worker-ci
+
+on:
+  push:
+    paths:
+      - "apps/worker/**"
+      - "packages/shared/**"
+      - ".github/workflows/worker.yml"
+  pull_request:
+    paths:
+      - "apps/worker/**"
+      - "packages/shared/**"
+
+jobs:
+  test-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install dependencies
+        run: npm install
+      - name: Typecheck
+        run: npm run typecheck --workspace @scheduler/worker
+      - name: Unit tests
+        run: npm run test --workspace @scheduler/worker
+      - name: Build
+        run: npm run build --workspace @scheduler/worker
+
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    needs: [test-build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Render worker deploy hook
+        env:
+          RENDER_DEPLOY_HOOK_WORKER: ${{ secrets.RENDER_DEPLOY_HOOK_WORKER }}
+        run: |
+          if [ -z "$RENDER_DEPLOY_HOOK_WORKER" ]; then
+            echo "Render worker deploy hook not configured; skipping."
+            exit 0
+          fi
+          curl -fsSL -X POST "$RENDER_DEPLOY_HOOK_WORKER"

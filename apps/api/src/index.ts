@@ -1,0 +1,68 @@
+import Fastify from "fastify";
+import cors from "@fastify/cors";
+import { getConfig } from "./config.js";
+import { initFirestore } from "./firebase.js";
+import { buildAuthHook } from "./http/auth.js";
+import { errorHandler } from "./http/error.js";
+import { EventRepository } from "./repositories/eventRepository.js";
+import { JobRepository } from "./repositories/jobRepository.js";
+import { WorkerRepository } from "./repositories/workerRepository.js";
+import { healthRoutes } from "./routes/health.js";
+import { jobRoutes } from "./routes/jobs.js";
+import { workerRoutes } from "./routes/workers.js";
+import { SchedulerService } from "./services/schedulerService.js";
+
+async function main(): Promise<void> {
+  const config = getConfig();
+  const db = initFirestore(config.projectId);
+
+  const jobs = new JobRepository(db);
+  const workers = new WorkerRepository(db);
+  const events = new EventRepository(db);
+  const scheduler = new SchedulerService(jobs, events, config.leaseMs);
+
+  const app = Fastify({ logger: true });
+  await app.register(cors, {
+    origin: (origin, callback) => {
+      if (!origin || config.corsOrigins.includes("*") || config.corsOrigins.includes(origin)) {
+        callback(null, true);
+        return;
+      }
+      callback(new Error("Origin not allowed"), false);
+    }
+  });
+  app.setErrorHandler(errorHandler);
+  app.addHook("preHandler", buildAuthHook(config.serviceToken));
+
+  await healthRoutes(app);
+  await jobRoutes(app, { jobs, events, scheduler });
+  await workerRoutes(app, { workers, jobs, scheduler });
+
+  const recoveryTimer = setInterval(async () => {
+    try {
+      const recovered = await scheduler.recoverExpiredLeases();
+      if (recovered > 0) {
+        app.log.warn({ recovered }, "Recovered expired job leases");
+      }
+    } catch (error) {
+      app.log.error({ error }, "Recovery loop failed");
+    }
+  }, 20000);
+
+  const shutdown = async () => {
+    clearInterval(recoveryTimer);
+    await app.close();
+    process.exit(0);
+  };
+
+  process.on("SIGINT", shutdown);
+  process.on("SIGTERM", shutdown);
+
+  await app.listen({ port: config.port, host: config.host });
+}
+
+main().catch((error) => {
+  // Top-level safeguard with error log to avoid silent failures.
+  console.error("Fatal startup error", error);
+  process.exit(1);
+});

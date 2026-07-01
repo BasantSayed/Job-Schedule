@@ -1,0 +1,42 @@
+name: web-ci
+
+on:
+  push:
+    paths:
+      - "apps/web/**"
+      - ".github/workflows/web.yml"
+  pull_request:
+    paths:
+      - "apps/web/**"
+
+jobs:
+  test-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install dependencies
+        run: npm install
+      - name: Typecheck
+        run: npm run typecheck --workspace @scheduler/web
+      - name: Unit tests
+        run: npm run test --workspace @scheduler/web
+      - name: Build
+        run: npm run build --workspace @scheduler/web
+
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    needs: [test-build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Vercel deploy hook
+        env:
+          VERCEL_DEPLOY_HOOK_WEB: ${{ secrets.VERCEL_DEPLOY_HOOK_WEB }}
+        run: |
+          if [ -z "$VERCEL_DEPLOY_HOOK_WEB" ]; then
+            echo "Vercel deploy hook not configured; skipping."
+            exit 0
+          fi
+          curl -fsSL -X POST "$VERCEL_DEPLOY_HOOK_WEB"
