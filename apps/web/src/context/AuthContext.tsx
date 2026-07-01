@@ -7,6 +7,7 @@ import {
   type User
 } from "firebase/auth";
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { syncUser } from "../api";
 import { auth } from "../firebase";
 
 type AuthContextValue = {
@@ -27,6 +28,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const unsub = onAuthStateChanged(auth, (next) => {
       setUser(next);
       setLoading(false);
+      if (next) {
+        void syncUser({
+          uid: next.uid,
+          email: next.email ?? "",
+          displayName: next.displayName ?? next.email ?? ""
+        }).catch(() => {});
+      }
     });
     return unsub;
   }, []);

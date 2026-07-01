@@ -8,10 +8,14 @@ import { EventRepository } from "./repositories/eventRepository.js";
 import { JobRepository } from "./repositories/jobRepository.js";
 import { WorkerRepository } from "./repositories/workerRepository.js";
 import { TaskRepository } from "./repositories/taskRepository.js";
+import { UserRepository } from "./repositories/userRepository.js";
+import { NotificationRepository } from "./repositories/notificationRepository.js";
 import { healthRoutes } from "./routes/health.js";
 import { jobRoutes } from "./routes/jobs.js";
 import { workerRoutes } from "./routes/workers.js";
 import { taskRoutes } from "./routes/tasks.js";
+import { userRoutes } from "./routes/users.js";
+import { notificationRoutes } from "./routes/notifications.js";
 import { SchedulerService } from "./services/schedulerService.js";
 
 async function main(): Promise<void> {
@@ -22,6 +26,8 @@ async function main(): Promise<void> {
   const workers = new WorkerRepository(db);
   const events = new EventRepository(db);
   const tasks = new TaskRepository(db);
+  const users = new UserRepository(db);
+  const notifications = new NotificationRepository(db);
   const scheduler = new SchedulerService(jobs, events, config.leaseMs);
 
   const app = Fastify({ logger: true });
@@ -40,7 +46,9 @@ async function main(): Promise<void> {
   await healthRoutes(app);
   await jobRoutes(app, { jobs, events, scheduler });
   await workerRoutes(app, { workers, jobs, scheduler });
-  await taskRoutes(app, { tasks });
+  await taskRoutes(app, { tasks, notifications });
+  await userRoutes(app, { users });
+  await notificationRoutes(app, { notifications });
 
   const recoveryTimer = setInterval(async () => {
     try {

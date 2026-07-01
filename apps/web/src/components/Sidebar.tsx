@@ -3,11 +3,11 @@ import {
   CalendarDays,
   Kanban,
   LayoutDashboard,
-  LogOut,
-  Settings
+  LogOut
 } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { NotificationBell } from "./NotificationBell";
 
 const nav = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -56,16 +56,17 @@ export function Sidebar() {
       </nav>
 
       <div className="border-t border-gray-800 pt-4 mt-4">
-        <div className="flex items-center gap-3 px-3 mb-3">
+        <div className="flex items-center gap-2 px-3 mb-3">
           <div className="w-8 h-8 rounded-full bg-brand-600 flex items-center justify-center text-white text-xs font-bold shrink-0">
             {initials}
           </div>
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <p className="text-sm font-medium text-gray-100 truncate">
               {user?.displayName ?? "User"}
             </p>
             <p className="text-xs text-gray-500 truncate">{user?.email}</p>
           </div>
+          <NotificationBell />
         </div>
         <button
           onClick={() => void logout()}

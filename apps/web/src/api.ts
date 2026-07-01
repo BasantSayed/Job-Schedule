@@ -4,19 +4,22 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL as string;
 const SERVICE_TOKEN = import.meta.env.VITE_SERVICE_TOKEN as string;
 
 async function apiRequest<T>(path: string, init?: RequestInit, userId?: string): Promise<T> {
+  const hasBody = init?.body != null;
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...init,
     headers: {
-      "content-type": "application/json",
+      ...(hasBody ? { "content-type": "application/json" } : {}),
       "x-service-token": SERVICE_TOKEN,
       ...(userId ? { "x-user-id": userId } : {}),
       ...(init?.headers ?? {})
     }
   });
+  if (response.status === 204) return undefined as T;
   if (!response.ok) {
     throw new Error(`Request failed (${response.status}): ${await response.text()}`);
   }
-  return (await response.json()) as T;
+  const text = await response.text();
+  return text ? (JSON.parse(text) as T) : (undefined as T);
 }
 
 export async function listJobs(statusFilter: string): Promise<Job[]> {
@@ -92,5 +95,36 @@ export async function updateTask(
 }
 
 export async function deleteTask(id: string): Promise<void> {
-  await apiRequest(`/tasks/${id}`, { method: "DELETE" });
+  await apiRequest(`/tasks/${id}`, { method: "DELETE", body: undefined });
+}
+
+export type AppUser = { uid: string; email: string; displayName: string; createdAt: number };
+
+export async function listUsers(): Promise<AppUser[]> {
+  const data = await apiRequest<{ items: AppUser[] }>("/users");
+  return data.items;
+}
+
+export async function syncUser(user: { uid: string; email: string; displayName: string }): Promise<void> {
+  await apiRequest("/users/sync", { method: "POST", body: JSON.stringify(user) });
+}
+
+export type AppNotification = {
+  id: string;
+  recipientUid: string;
+  type: "TASK_ASSIGNED" | "STATUS_CHANGED";
+  taskId: string;
+  taskTitle: string;
+  message: string;
+  read: boolean;
+  createdAt: number;
+};
+
+export async function listNotifications(uid: string): Promise<AppNotification[]> {
+  const data = await apiRequest<{ items: AppNotification[] }>(`/notifications?uid=${encodeURIComponent(uid)}`);
+  return data.items;
+}
+
+export async function markNotificationRead(id: string): Promise<void> {
+  await apiRequest(`/notifications/${id}/read`, { method: "POST", body: JSON.stringify({}) });
 }
