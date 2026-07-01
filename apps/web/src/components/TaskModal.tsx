@@ -30,7 +30,8 @@ function WorkerAutocomplete({
   onSelectUser: (u: AppUser) => void;
 }) {
   const [users, setUsers] = useState<AppUser[]>([]);
-  const [suggestions, setSuggestions] = useState<AppUser[]>([]);
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -39,33 +40,32 @@ function WorkerAutocomplete({
       .catch(() => {});
   }, []);
 
+  const filtered = query.trim()
+    ? users.filter(
+        (u) =>
+          u.email.toLowerCase().includes(query.toLowerCase().replace(/^@/, "")) ||
+          u.displayName.toLowerCase().includes(query.toLowerCase())
+      )
+    : users;
+
+  const visibleList = filtered.slice(0, 8);
+
   const handleInput = (v: string) => {
     onChange(v);
-    if (v.length >= 1) {
-      const q = v.toLowerCase().replace(/^@/, "");
-      setSuggestions(
-        users
-          .filter(
-            (u) =>
-              u.email.toLowerCase().includes(q) ||
-              u.displayName.toLowerCase().includes(q)
-          )
-          .slice(0, 6)
-      );
-    } else {
-      setSuggestions([]);
-    }
+    setQuery(v);
+    setOpen(true);
   };
 
   const pick = (u: AppUser) => {
     onSelectUser(u);
     onChange(u.email);
-    setSuggestions([]);
+    setQuery(u.email);
+    setOpen(false);
   };
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setSuggestions([]);
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
@@ -75,25 +75,31 @@ function WorkerAutocomplete({
     <div className="relative" ref={ref}>
       <input
         className="input"
-        placeholder="Type @ or email to search workers..."
+        placeholder="Click to pick a worker or type to search..."
         value={value}
         onChange={(e) => handleInput(e.target.value)}
+        onFocus={() => setOpen(true)}
         autoComplete="off"
       />
-      {suggestions.length > 0 && (
-        <ul className="absolute z-50 top-full left-0 right-0 mt-1 bg-gray-900 border border-gray-700 rounded-lg shadow-xl overflow-hidden">
-          {suggestions.map((u) => (
+      {open && (
+        <ul className="absolute z-50 top-full left-0 right-0 mt-1 bg-gray-900 border border-gray-700 rounded-lg shadow-2xl overflow-hidden max-h-52 overflow-y-auto">
+          {visibleList.length === 0 && (
+            <li className="px-3 py-3 text-sm text-gray-500 text-center">
+              No users found — make sure they have logged in at least once
+            </li>
+          )}
+          {visibleList.map((u) => (
             <li
               key={u.uid}
               onMouseDown={() => pick(u)}
-              className="px-3 py-2 hover:bg-gray-800 cursor-pointer flex items-center gap-3"
+              className="px-3 py-2.5 hover:bg-gray-800 cursor-pointer flex items-center gap-3 border-b border-gray-800 last:border-0"
             >
-              <div className="w-7 h-7 rounded-full bg-brand-700 flex items-center justify-center text-[11px] font-bold text-white shrink-0">
+              <div className="w-8 h-8 rounded-full bg-brand-700 flex items-center justify-center text-[12px] font-bold text-white shrink-0">
                 {u.displayName.charAt(0).toUpperCase()}
               </div>
-              <div>
-                <span className="text-sm text-gray-100 font-medium">{u.displayName}</span>
-                <span className="text-xs text-gray-400 ml-2">{u.email}</span>
+              <div className="min-w-0">
+                <p className="text-sm text-gray-100 font-medium truncate">{u.displayName}</p>
+                <p className="text-xs text-gray-400 truncate">{u.email}</p>
               </div>
             </li>
           ))}
@@ -167,7 +173,7 @@ export function TaskModal({ initial, defaultStartAt, defaultDueAt, onSave, onDel
 
   return (
     <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="modal">
+      <div className="modal w-full mx-2 sm:mx-0 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-gray-800">
           <h2 className="text-base font-semibold text-white">
             {initial ? "Edit Task" : "Create Task"}
@@ -217,7 +223,7 @@ export function TaskModal({ initial, defaultStartAt, defaultDueAt, onSave, onDel
             </select>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="label">Start date &amp; time</label>
               <input

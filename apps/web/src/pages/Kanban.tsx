@@ -145,25 +145,25 @@ export function Kanban() {
   };
 
   return (
-    <div className="p-6 space-y-5">
-      <div className="flex items-center justify-between">
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl font-bold text-white">Kanban Board</h1>
+          <h1 className="text-xl font-bold text-white">Tasks Board</h1>
           <p className="text-sm text-gray-400">Drag cards between columns to update status</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <input
-            className="input h-8 w-44 text-xs"
-            placeholder="Filter by worker email..."
+            className="input h-8 flex-1 sm:w-44 text-xs"
+            placeholder="Filter by worker..."
             value={filterWorker}
             onChange={e => setFilterWorker(e.target.value)}
           />
           <button
             onClick={() => { setNewColStatus("TODO"); setModalTask("new"); }}
-            className="btn-primary"
+            className="btn-primary shrink-0"
           >
             <Plus size={15} />
-            New Task
+            <span className="hidden sm:inline">New Task</span>
           </button>
         </div>
       </div>
@@ -174,7 +174,7 @@ export function Kanban() {
         </div>
       ) : (
         <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={(e) => void handleDragEnd(e)}>
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
             {COLUMNS.map(col => {
               const colTasks = byColumn(col.id);
               return (

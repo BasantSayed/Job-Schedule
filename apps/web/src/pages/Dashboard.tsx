@@ -70,14 +70,14 @@ function TaskRow({ task }: { task: TaskRecord }) {
           {TASK_STATUS_LABELS[task.status]}
         </span>
       </td>
-      <td className="px-4 py-3">
+      <td className="px-4 py-3 hidden sm:table-cell">
         {task.assignedWorkerEmail ? (
           <span className="text-xs text-gray-300">{task.assignedWorkerEmail}</span>
         ) : (
           <span className="text-xs text-gray-600">Unassigned</span>
         )}
       </td>
-      <td className="px-4 py-3">
+      <td className="px-4 py-3 hidden md:table-cell">
         {task.dueAt ? (
           <span className={`text-xs ${overdue ? "text-red-400 font-medium" : "text-gray-400"}`}>
             {overdue && <AlertTriangle size={11} className="inline mr-1" />}
@@ -87,7 +87,7 @@ function TaskRow({ task }: { task: TaskRecord }) {
           <span className="text-xs text-gray-600">—</span>
         )}
       </td>
-      <td className="px-4 py-3 text-xs text-gray-500 whitespace-nowrap">
+      <td className="px-4 py-3 text-xs text-gray-500 whitespace-nowrap hidden lg:table-cell">
         {formatDistanceToNow(task.createdAt, { addSuffix: true })}
       </td>
     </tr>
@@ -152,7 +152,7 @@ export function Dashboard() {
             <RefreshCw size={15} className={loading ? "animate-spin" : ""} />
             Refresh
           </button>
-          <Link to="/kanban" className="btn-primary">
+          <Link to="/tasks" className="btn-primary">
             <Plus size={15} />
             New Task
           </Link>
@@ -160,7 +160,7 @@ export function Dashboard() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
         <StatCard icon={ListTodo} label="Total" value={stats.total} color="bg-purple-500/15 text-purple-400" />
         <StatCard icon={CircleDot} label="To Do" value={stats.todo} color="bg-gray-500/15 text-gray-400" />
         <StatCard icon={Clock} label="In Progress" value={stats.inProgress} color="bg-blue-500/15 text-blue-400" />
@@ -171,15 +171,15 @@ export function Dashboard() {
       </div>
 
       {/* Quick nav */}
-      <div className="flex gap-3">
+      <div className="flex flex-col sm:flex-row gap-3">
         <Link
-          to="/kanban"
+          to="/tasks"
           className="flex-1 card hover:border-brand-500/40 transition-colors cursor-pointer group text-center py-4"
         >
           <p className="text-sm font-semibold text-white group-hover:text-brand-400 transition-colors">
-            Kanban Board
+            Tasks Board
           </p>
-          <p className="text-xs text-gray-500 mt-0.5">Drag & drop task management</p>
+          <p className="text-xs text-gray-500 mt-0.5">Drag &amp; drop task management</p>
         </Link>
         <Link
           to="/calendar"
@@ -217,8 +217,8 @@ export function Dashboard() {
           </select>
           <span className="text-xs text-gray-500 ml-auto">{filtered.length} tasks</span>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+        <div className="overflow-x-auto -mx-px">
+          <table className="w-full text-sm min-w-[540px]">
             <thead className="border-b border-gray-800 bg-gray-900/50">
               <tr>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
@@ -227,13 +227,13 @@ export function Dashboard() {
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
                   Status
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider hidden sm:table-cell">
                   Assigned To
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider hidden md:table-cell">
                   Due
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider hidden lg:table-cell">
                   Created
                 </th>
               </tr>
@@ -252,7 +252,7 @@ export function Dashboard() {
                         : "No tasks match the current filter"}
                     </p>
                     {tasks.length === 0 && (
-                      <Link to="/kanban" className="btn-primary mt-4 inline-flex">
+                      <Link to="/tasks" className="btn-primary mt-4 inline-flex">
                         <Plus size={14} />
                         Create first task
                       </Link>

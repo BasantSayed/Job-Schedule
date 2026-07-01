@@ -118,9 +118,9 @@ export function Calendar() {
     : undefined;
 
   return (
-    <div className="p-6 flex gap-6">
+    <div className="p-3 sm:p-6 flex flex-col lg:flex-row gap-4 lg:gap-6">
       <div className="flex-1 min-w-0">
-        <div className="flex items-center justify-between mb-5">
+        <div className="flex items-center justify-between mb-4 sm:mb-5">
           <div>
             <h1 className="text-xl font-bold text-white">Calendar</h1>
             <p className="text-sm text-gray-400">{format(month, "MMMM yyyy")}</p>
@@ -160,7 +160,7 @@ export function Calendar() {
                 </div>
               ))}
             </div>
-            <div className="grid grid-cols-7">
+            <div className="grid grid-cols-7 overflow-x-auto">
               {days.map((day, i) => {
                 const dayTasks = tasksForDay(day);
                 const isSelected = selectedDay && isSameDay(day, selectedDay);
@@ -175,7 +175,7 @@ export function Calendar() {
                       )
                     }
                     className={[
-                      "min-h-[100px] p-2 border-b border-r border-gray-800 cursor-pointer transition-colors relative",
+                      "min-h-[70px] sm:min-h-[100px] p-1 sm:p-2 border-b border-r border-gray-800 cursor-pointer transition-colors relative",
                       !inMonth && "opacity-30",
                       isToday(day) && "bg-brand-900/20",
                       isSelected && "bg-brand-900/40 ring-1 ring-inset ring-brand-600",
@@ -220,33 +220,24 @@ export function Calendar() {
                           );
                         }
 
-                        // For range tasks, check if this is the first visible
-                        // day of the week so the title always re-appears.
-                        const colIndex = i % 7;
-                        const showTitle = start || colIndex === 0;
-
                         return (
                           <div
                             key={t.id}
                             className={[
-                              "text-[11px] truncate px-1.5 py-0.5 cursor-pointer",
+                              "text-[11px] truncate px-1.5 py-0.5 cursor-pointer font-medium",
                               STATUS_BAR[t.status],
-                              start ? "rounded-l-full" : "rounded-l-none",
-                              end ? "rounded-r-full" : "rounded-r-none",
-                              single ? "rounded-full" : ""
+                              start ? "rounded-l-full ml-0.5" : "rounded-l-none ml-0",
+                              end ? "rounded-r-full mr-0.5" : "rounded-r-none mr-0",
+                              single ? "rounded-full mx-0.5" : ""
                             ]
                               .filter(Boolean)
                               .join(" ")}
-                            style={{
-                              marginLeft: start || colIndex === 0 ? "2px" : "0",
-                              marginRight: end ? "2px" : "0"
-                            }}
                             onClick={(e) => {
                               e.stopPropagation();
                               setModalTask(t);
                             }}
                           >
-                            {showTitle ? t.title : "\u00a0"}
+                            {t.title}
                           </div>
                         );
                       })}
@@ -265,7 +256,7 @@ export function Calendar() {
       </div>
 
       {selectedDay && (
-        <div className="w-72 shrink-0">
+        <div className="w-full lg:w-72 shrink-0">
           <div className="sticky top-6 space-y-3">
             <div className="flex items-center justify-between">
               <h2 className="text-sm font-semibold text-white">
