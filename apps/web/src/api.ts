@@ -101,8 +101,12 @@ export async function deleteTask(id: string): Promise<void> {
 export type AppUser = { uid: string; email: string; displayName: string; createdAt: number };
 
 export async function listUsers(): Promise<AppUser[]> {
-  const data = await apiRequest<{ items: AppUser[] }>("/users");
-  return data.items;
+  try {
+    const data = await apiRequest<{ items: AppUser[] }>("/users");
+    return data.items ?? [];
+  } catch {
+    return [];
+  }
 }
 
 export async function syncUser(user: { uid: string; email: string; displayName: string }): Promise<void> {
