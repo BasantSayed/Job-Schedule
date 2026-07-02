@@ -116,19 +116,27 @@ function Invoke-PagesDeploy {
   gh workflow run pages.yml *> $null
   if ($LASTEXITCODE -ne 0) { return $null }
   Start-Sleep -Seconds 10
-  $runId = (gh run list --workflow=pages.yml --limit 1 --json databaseId --jq ".[0].databaseId" 2>$null | Select-Object -First 1)
-  if ($runId) { return ("" + $runId).Trim() }
+  $json = (gh run list --workflow=pages.yml --limit 1 --json databaseId 2>$null | Out-String)
+  try {
+    $arr = $json | ConvertFrom-Json
+    if ($arr -and $arr.Count -ge 1) { return ("" + $arr[0].databaseId).Trim() }
+  } catch {}
   return $null
 }
 
 function Wait-RunResult([string]$runId) {
-  # Poll until the run completes (build+deploy usually takes 5-11 minutes)
+  # Poll until the run completes (build+deploy usually takes 5-11 minutes).
+  # Parse JSON in PowerShell to avoid cross-shell --jq quoting issues.
   $deadline = (Get-Date).AddMinutes(20)
   while ((Get-Date) -lt $deadline) {
-    $info = (gh run view $runId --json status,conclusion --jq "[.status, (.conclusion // \"\")] | join(\",\")" 2>$null | Select-Object -First 1)
-    if ($info) {
-      $parts = ("" + $info).Trim().Split(",")
-      if ($parts[0] -eq "completed") { return $parts[1] }
+    $json = (gh run view $runId --json status,conclusion 2>$null | Out-String)
+    if ($json.Trim()) {
+      try {
+        $obj = $json | ConvertFrom-Json
+        if ($obj.status -eq "completed") {
+          if ($obj.conclusion) { return $obj.conclusion } else { return "unknown" }
+        }
+      } catch {}
     }
     Start-Sleep -Seconds 20
   }
