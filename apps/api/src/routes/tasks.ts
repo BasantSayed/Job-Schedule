@@ -95,9 +95,40 @@ export async function taskRoutes(
     const existing = await deps.tasks.getById(id);
     if (!existing) return reply.code(404).send({ error: "Task not found" });
     const patch = updateTaskSchema.parse(request.body ?? {});
+    const changerUid = (request.headers["x-user-id"] as string) ?? "unknown";
+
+    // If assignment is part of this update, resolve the email to a real UID
+    // so it is stored consistently and notifications reach the right user.
+    const touchesAssignment =
+      patch.assignedWorkerEmail !== undefined || patch.assignedWorkerId !== undefined;
+    if (touchesAssignment) {
+      patch.assignedWorkerId = await resolveAssigneeUid(
+        patch.assignedWorkerId ?? null,
+        patch.assignedWorkerEmail ?? existing.assignedWorkerEmail
+      );
+    }
+
     await deps.tasks.update(id, patch);
 
-    const changerUid = (request.headers["x-user-id"] as string) ?? "unknown";
+    // Notify the newly assigned worker (if the assignee actually changed)
+    if (
+      touchesAssignment &&
+      patch.assignedWorkerId &&
+      patch.assignedWorkerId !== existing.assignedWorkerId &&
+      patch.assignedWorkerId !== changerUid
+    ) {
+      await deps.notifications.create({
+        id: randomUUID(),
+        recipientUid: patch.assignedWorkerId,
+        type: "TASK_ASSIGNED",
+        taskId: id,
+        taskTitle: patch.title ?? existing.title,
+        message: `You have been assigned to task: "${patch.title ?? existing.title}"`,
+        read: false,
+        createdAt: Date.now()
+      });
+    }
+
     if (patch.status && patch.status !== existing.status) {
       const recipients = new Set<string>();
       // Include assignedWorkerId (resolve from email if needed)
