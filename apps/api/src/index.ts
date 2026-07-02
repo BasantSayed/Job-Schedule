@@ -4,31 +4,21 @@ import { getConfig } from "./config.js";
 import { initFirestore } from "./firebase.js";
 import { buildAuthHook } from "./http/auth.js";
 import { errorHandler } from "./http/error.js";
-import { EventRepository } from "./repositories/eventRepository.js";
-import { JobRepository } from "./repositories/jobRepository.js";
-import { WorkerRepository } from "./repositories/workerRepository.js";
 import { TaskRepository } from "./repositories/taskRepository.js";
 import { UserRepository } from "./repositories/userRepository.js";
 import { NotificationRepository } from "./repositories/notificationRepository.js";
 import { healthRoutes } from "./routes/health.js";
-import { jobRoutes } from "./routes/jobs.js";
-import { workerRoutes } from "./routes/workers.js";
 import { taskRoutes } from "./routes/tasks.js";
 import { userRoutes } from "./routes/users.js";
 import { notificationRoutes } from "./routes/notifications.js";
-import { SchedulerService } from "./services/schedulerService.js";
 
 async function main(): Promise<void> {
   const config = getConfig();
   const db = initFirestore(config.projectId);
 
-  const jobs = new JobRepository(db);
-  const workers = new WorkerRepository(db);
-  const events = new EventRepository(db);
   const tasks = new TaskRepository(db);
   const users = new UserRepository(db);
   const notifications = new NotificationRepository(db);
-  const scheduler = new SchedulerService(jobs, events, config.leaseMs);
 
   const app = Fastify({ logger: true });
   await app.register(cors, {
@@ -44,25 +34,11 @@ async function main(): Promise<void> {
   app.addHook("preHandler", buildAuthHook(config.serviceToken));
 
   await healthRoutes(app);
-  await jobRoutes(app, { jobs, events, scheduler });
-  await workerRoutes(app, { workers, jobs, scheduler });
   await taskRoutes(app, { tasks, notifications, users });
   await userRoutes(app, { users });
   await notificationRoutes(app, { notifications });
 
-  const recoveryTimer = setInterval(async () => {
-    try {
-      const recovered = await scheduler.recoverExpiredLeases();
-      if (recovered > 0) {
-        app.log.warn({ recovered }, "Recovered expired job leases");
-      }
-    } catch (error) {
-      app.log.error({ error }, "Recovery loop failed");
-    }
-  }, 20000);
-
   const shutdown = async () => {
-    clearInterval(recoveryTimer);
     await app.close();
     process.exit(0);
   };
