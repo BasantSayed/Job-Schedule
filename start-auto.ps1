@@ -112,20 +112,22 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 function Invoke-PagesDeploy {
-  gh workflow run pages.yml
+  # Suppress stdout so only the clean run id is returned by this function.
+  gh workflow run pages.yml *> $null
   if ($LASTEXITCODE -ne 0) { return $null }
   Start-Sleep -Seconds 10
-  $runId = gh run list --workflow=pages.yml --limit 1 --json databaseId --jq ".[0].databaseId"
-  return $runId
+  $runId = (gh run list --workflow=pages.yml --limit 1 --json databaseId --jq ".[0].databaseId" 2>$null | Select-Object -First 1)
+  if ($runId) { return ("" + $runId).Trim() }
+  return $null
 }
 
 function Wait-RunResult([string]$runId) {
   # Poll until the run completes (build+deploy usually takes 5-11 minutes)
   $deadline = (Get-Date).AddMinutes(20)
   while ((Get-Date) -lt $deadline) {
-    $info = gh run view $runId --json status,conclusion --jq "[.status, .conclusion // \"\"] | join(\",\")" 2>$null
+    $info = (gh run view $runId --json status,conclusion --jq "[.status, (.conclusion // \"\")] | join(\",\")" 2>$null | Select-Object -First 1)
     if ($info) {
-      $parts = $info.Split(",")
+      $parts = ("" + $info).Trim().Split(",")
       if ($parts[0] -eq "completed") { return $parts[1] }
     }
     Start-Sleep -Seconds 20
