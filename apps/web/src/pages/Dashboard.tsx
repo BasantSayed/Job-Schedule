@@ -128,7 +128,6 @@ export function Dashboard() {
       mine: tasks.filter(
         (t) =>
           t.assignedWorkerId === user?.uid ||
-          t.createdBy === user?.uid ||
           (user?.email && t.assignedWorkerEmail === user.email)
       ).length
     }),
