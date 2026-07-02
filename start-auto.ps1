@@ -19,6 +19,18 @@ function Ensure-Command([string]$name) {
 Set-Location $repoRoot
 New-Item -ItemType Directory -Path $runtimeDir -Force | Out-Null
 
+# Ensure common tool locations are on PATH (fresh shells may miss them)
+$extraPaths = @(
+  "C:\Program Files\GitHub CLI",
+  "C:\Program Files\Git\cmd",
+  "C:\Program Files\nodejs"
+)
+foreach ($p in $extraPaths) {
+  if ((Test-Path $p) -and ($env:PATH -notlike "*$p*")) {
+    $env:PATH += ";$p"
+  }
+}
+
 Write-Step "Starting API server window"
 $apiCommand = "Set-Location '$repoRoot'; npm run dev --workspace @scheduler/api"
 Start-Process powershell -ArgumentList @(
