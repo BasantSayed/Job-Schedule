@@ -2,7 +2,8 @@ $ErrorActionPreference = "Stop"
 
 $repoRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 $runtimeDir = Join-Path $repoRoot ".runtime"
-$logFile = Join-Path $runtimeDir "cloudflared.log"
+$logOutFile = Join-Path $runtimeDir "cloudflared.out.log"
+$logErrFile = Join-Path $runtimeDir "cloudflared.err.log"
 $urlFile = Join-Path $runtimeDir "current-tunnel-url.txt"
 
 function Write-Step([string]$message) {
@@ -30,7 +31,8 @@ Start-Sleep -Seconds 2
 
 Write-Step "Starting Cloudflare quick tunnel"
 Ensure-Command "cloudflared"
-Remove-Item $logFile -ErrorAction SilentlyContinue
+Remove-Item $logOutFile -ErrorAction SilentlyContinue
+Remove-Item $logErrFile -ErrorAction SilentlyContinue
 
 # Stop old quick tunnels so we always pick the fresh URL.
 Get-CimInstance Win32_Process |
@@ -44,7 +46,7 @@ Get-CimInstance Win32_Process |
 
 $cloudflaredProc = Start-Process cloudflared -ArgumentList @(
   "tunnel", "--url", "http://localhost:8080", "--no-autoupdate"
-) -RedirectStandardOutput $logFile -RedirectStandardError $logFile -PassThru
+) -RedirectStandardOutput $logOutFile -RedirectStandardError $logErrFile -PassThru
 
 Write-Host "Cloudflared PID: $($cloudflaredProc.Id)"
 
@@ -54,14 +56,14 @@ $urlPattern = "https://[a-z0-9-]+\.trycloudflare\.com"
 $tunnelUrl = $null
 
 while ((Get-Date) -lt $deadline) {
-  if (Test-Path $logFile) {
-    $content = Get-Content -Path $logFile -Raw -ErrorAction SilentlyContinue
-    if ($content) {
-      $match = [regex]::Match($content, $urlPattern)
-      if ($match.Success) {
-        $tunnelUrl = $match.Value
-        break
-      }
+  $outContent = if (Test-Path $logOutFile) { Get-Content -Path $logOutFile -Raw -ErrorAction SilentlyContinue } else { "" }
+  $errContent = if (Test-Path $logErrFile) { Get-Content -Path $logErrFile -Raw -ErrorAction SilentlyContinue } else { "" }
+  $combined = "$outContent`n$errContent"
+  if ($combined) {
+    $match = [regex]::Match($combined, $urlPattern)
+    if ($match.Success) {
+      $tunnelUrl = $match.Value
+      break
     }
   }
   Start-Sleep -Milliseconds 500
@@ -69,7 +71,7 @@ while ((Get-Date) -lt $deadline) {
 
 if (-not $tunnelUrl) {
   Write-Host "Could not detect trycloudflare URL in 60s." -ForegroundColor Red
-  Write-Host "Check log file: $logFile" -ForegroundColor Yellow
+  Write-Host "Check logs: $logOutFile and $logErrFile" -ForegroundColor Yellow
   exit 1
 }
 
