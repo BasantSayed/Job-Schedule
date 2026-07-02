@@ -1,16 +1,20 @@
 @echo off
-REM Double-click this file to start the API server and Cloudflare tunnel.
+REM ============================================================
+REM  Double-click this every time you start your PC.
+REM  Run setup-tunnel.bat FIRST if you haven't done so yet.
+REM ============================================================
 
 echo Starting API server and Cloudflare Tunnel...
 
-start "API Server" powershell -NoExit -ExecutionPolicy Bypass -Command "cd 'C:\Users\RTX\Desktop\Distributed'; npm run dev --workspace @scheduler/api"
+REM Window 1: API server
+start "API Server" powershell -NoExit -ExecutionPolicy Bypass -Command "cd 'C:\Users\RTX\Desktop\Distributed'; Write-Host 'API Server starting...' -ForegroundColor Green; npm run dev --workspace @scheduler/api"
 
 timeout /t 2 /nobreak >nul
 
-start "Cloudflare Tunnel" powershell -NoExit -ExecutionPolicy Bypass -Command "cloudflared tunnel --url http://localhost:8080"
+REM Window 2: Named tunnel (permanent URL - never changes)
+start "Cloudflare Tunnel" powershell -NoExit -ExecutionPolicy Bypass -Command "Write-Host 'Starting permanent Cloudflare tunnel...' -ForegroundColor Yellow; cloudflared tunnel run task-manager-api"
 
 echo.
 echo Both windows are starting.
-echo Copy the trycloudflare.com URL from the Tunnel window and update your GitHub secret VITE_API_BASE_URL.
+echo Your API URL is permanent - no need to update GitHub secrets.
 echo.
-pause
