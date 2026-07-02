@@ -25,12 +25,15 @@ export class NotificationRepository {
   }
 
   async listForUser(uid: string, limit = 50): Promise<NotificationRecord[]> {
+    // Filter only by recipientUid (no composite index needed), sort in memory.
     const snap = await this.db
       .collection(COLLECTION)
       .where("recipientUid", "==", uid)
-      .orderBy("createdAt", "desc")
-      .limit(limit)
+      .limit(500)
       .get();
-    return snap.docs.map((d) => d.data() as NotificationRecord);
+    return snap.docs
+      .map((d) => d.data() as NotificationRecord)
+      .sort((a, b) => b.createdAt - a.createdAt)
+      .slice(0, limit);
   }
 }

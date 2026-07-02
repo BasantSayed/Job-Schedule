@@ -23,13 +23,24 @@ export class TaskRepository {
     to?: number;
     limit?: number;
   }): Promise<TaskRecord[]> {
-    let q = this.db.collection(COLLECTION).orderBy("dueAt", "asc") as FirebaseFirestore.Query;
+    // Use at most one equality filter in Firestore (no composite index needed);
+    // apply the remaining filters and sorting in memory.
+    let q: FirebaseFirestore.Query = this.db.collection(COLLECTION);
     if (filters.status) q = q.where("status", "==", filters.status);
-    if (filters.assignedWorkerId) q = q.where("assignedWorkerId", "==", filters.assignedWorkerId);
-    if (filters.from) q = q.where("dueAt", ">=", filters.from);
-    if (filters.to) q = q.where("dueAt", "<=", filters.to);
-    const snap = await q.limit(filters.limit ?? 200).get();
-    return snap.docs.map((d) => d.data() as TaskRecord);
+    else if (filters.assignedWorkerId) {
+      q = q.where("assignedWorkerId", "==", filters.assignedWorkerId);
+    }
+    const snap = await q.limit(1000).get();
+
+    let items = snap.docs.map((d) => d.data() as TaskRecord);
+    if (filters.status && filters.assignedWorkerId) {
+      items = items.filter((t) => t.assignedWorkerId === filters.assignedWorkerId);
+    }
+    if (filters.from) items = items.filter((t) => t.dueAt != null && t.dueAt >= filters.from!);
+    if (filters.to) items = items.filter((t) => t.dueAt != null && t.dueAt <= filters.to!);
+
+    items.sort((a, b) => (a.dueAt ?? Number.MAX_SAFE_INTEGER) - (b.dueAt ?? Number.MAX_SAFE_INTEGER));
+    return items.slice(0, filters.limit ?? 200);
   }
 
   async update(id: string, patch: Partial<TaskRecord>): Promise<void> {
