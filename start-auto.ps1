@@ -111,14 +111,55 @@ if ($LASTEXITCODE -ne 0) {
   exit 0
 }
 
-gh workflow run pages.yml
-if ($LASTEXITCODE -ne 0) {
-  Write-Host "Secret updated but workflow trigger failed. Re-run pages.yml manually in GitHub Actions." -ForegroundColor Yellow
-  exit 0
+function Invoke-PagesDeploy {
+  gh workflow run pages.yml
+  if ($LASTEXITCODE -ne 0) { return $null }
+  Start-Sleep -Seconds 10
+  $runId = gh run list --workflow=pages.yml --limit 1 --json databaseId --jq ".[0].databaseId"
+  return $runId
+}
+
+function Wait-RunResult([string]$runId) {
+  # Poll until the run completes (build+deploy usually takes 5-11 minutes)
+  $deadline = (Get-Date).AddMinutes(20)
+  while ((Get-Date) -lt $deadline) {
+    $info = gh run view $runId --json status,conclusion --jq "[.status, .conclusion // \"\"] | join(\",\")" 2>$null
+    if ($info) {
+      $parts = $info.Split(",")
+      if ($parts[0] -eq "completed") { return $parts[1] }
+    }
+    Start-Sleep -Seconds 20
+  }
+  return "timeout"
+}
+
+Write-Host "Triggering Pages deployment (takes 5-11 minutes)..."
+$maxAttempts = 3
+$deployOk = $false
+
+for ($attempt = 1; $attempt -le $maxAttempts; $attempt++) {
+  $runId = Invoke-PagesDeploy
+  if (-not $runId) {
+    Write-Host "Attempt ${attempt}: could not trigger workflow." -ForegroundColor Yellow
+    continue
+  }
+  Write-Host "Attempt ${attempt}: waiting for run $runId to finish..."
+  $result = Wait-RunResult $runId
+  if ($result -eq "success") {
+    $deployOk = $true
+    break
+  }
+  Write-Host "Attempt ${attempt} ended with: $result. Retrying..." -ForegroundColor Yellow
+}
+
+if (-not $deployOk) {
+  Write-Host "Deployment did not succeed after $maxAttempts attempts." -ForegroundColor Red
+  Write-Host "Open GitHub Actions and re-run pages.yml manually." -ForegroundColor Yellow
+  exit 1
 }
 
 Write-Host "`nAll done." -ForegroundColor Green
 Write-Host "1) API server started in separate window"
 Write-Host "2) Tunnel URL captured: $tunnelUrl"
 Write-Host "3) GitHub secret updated automatically"
-Write-Host "4) Pages workflow triggered automatically"
+Write-Host "4) Site deployed successfully: https://basantsayed.github.io/Job-Schedule/"
