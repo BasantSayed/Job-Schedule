@@ -3,11 +3,11 @@ REM Double-click this file to start the API server and Cloudflare tunnel.
 
 echo Starting API server and Cloudflare Tunnel...
 
-start "API Server" powershell -NoExit -Command "cd 'C:\Users\RTX\Desktop\Distributed'; npm run dev --workspace @scheduler/api"
+start "API Server" powershell -NoExit -ExecutionPolicy Bypass -Command "cd 'C:\Users\RTX\Desktop\Distributed'; npm run dev --workspace @scheduler/api"
 
 timeout /t 2 /nobreak >nul
 
-start "Cloudflare Tunnel" powershell -NoExit -Command "cloudflared tunnel --url http://localhost:8080"
+start "Cloudflare Tunnel" powershell -NoExit -ExecutionPolicy Bypass -Command "cloudflared tunnel --url http://localhost:8080"
 
 echo.
 echo Both windows are starting.
